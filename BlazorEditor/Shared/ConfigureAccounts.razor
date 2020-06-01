@@ -1,0 +1,162 @@
+@using Microsoft.AspNetCore.Identity
+@using BlazorEditor.Identity
+@using BlazorEditor.Data
+@using System.Security.Cryptography
+@using System.Timers
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject ApplicationDbContext Context
+
+@implements IDisposable
+
+<p>
+    You are not shown in this list. To delete your own account, go to Manage Account.
+    <i class="refresh icon" style="float: right;" @onclick="StateHasChanged"></i>
+</p>
+@if (UserManager.Users.Count() == 1)
+{
+    <div class="ui message">You are the only user account.</div>
+}
+else
+{
+    <div class="ui segments">
+        <div class="ui segment">
+            <div class="ui fluid icon input">
+                <input @bind="SearchValue" @bind:event="oninput" type="text" placeholder="Search...">
+                @if (SearchValue == string.Empty)
+                {
+                    <i class="search icon"></i>
+                }
+                else
+                {
+                    <i class="circular close link icon"
+                       @onclick=@(e => { SearchValue = string.Empty; })>
+                    </i>
+                }
+            </div>
+        </div>
+        <div class="itemsMenu ui segment">
+            <table class="ui celled table">
+                <tbody>
+                <CascadingValue Value=this>
+                    @foreach (ApplicationUser user in UserManager.Users.Where(user => user.UserName != Username))
+                    {
+                        <ConfigureAccountsItem User="@user"/>
+                    }
+                </CascadingValue>
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+<div class="ui button" @onclick="CreateRegisterUrl" style="margin-right: 0.5em;">Create register URL</div>
+<div class="ui button" @onclick="RevokeRegisterUrls">Revoke all @Context.RegisterTokens.Count(token => DateTime.Now < token.Expire) register URLs</div>
+@if (ShowRegisterUrlCreated && Context.RegisterTokens.Count(token => DateTime.Now < token.Expire) > 0)
+{
+    <div class="ui action input">
+        <input type="text" value="@NewRegisterUrl"/>
+        <div class="ui right labeled icon button" @onclick="CopyUrlToClipboard">
+            <i class="copy icon"></i>
+            @CopyButtonText
+        </div>
+    </div>
+}
+
+@code {
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; }
+    
+    public string SearchValue { get; set; } = string.Empty;
+    
+    public event Action Notify;
+    
+    private string Username { get; set; }
+    
+    private bool ShowRegisterUrlCreated { get; set; }
+    private string NewRegisterUrl { get; set; }
+    private string CopyButtonText { get; set; } = "Copy";
+    private Timer CopyTextTimer { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationState authState = await AuthenticationStateTask;
+        Username = authState.User.Identity.Name;
+    }
+
+    private void CreateRegisterUrl()
+    {
+        string token;
+        using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+        {
+            byte[] tokenData = new byte[32];
+            rng.GetBytes(tokenData);
+            token = Convert.ToBase64String(tokenData).Replace("+", "");
+        }
+        Context.RegisterTokens.Add(new RegisterToken
+        {
+            Token = token,
+            Expire = DateTime.Now.AddDays(30)
+        });
+        Context.SaveChanges();
+        NewRegisterUrl = NavigationManager.ToAbsoluteUri("/Register") + "?code=" + token;
+        ShowRegisterUrlCreated = true;
+    }
+
+    private async Task CopyUrlToClipboard()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", NewRegisterUrl);
+        CopyButtonText = "Copied!";
+        if (CopyTextTimer == null)
+        {
+            CopyTextTimer = new Timer(2000);
+            CopyTextTimer.Elapsed += ResetCopyButtonText;
+            CopyTextTimer.AutoReset = false;
+        }
+        if (CopyTextTimer.Enabled)
+        {
+            CopyTextTimer.Stop();
+        }
+        CopyTextTimer.Start();
+    }
+
+    private async void ResetCopyButtonText(object sender, ElapsedEventArgs elapsedEventArgs)
+    {
+        CopyButtonText = "Copy";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void RevokeRegisterUrls()
+    {
+        Context.RegisterTokens.RemoveRange(Context.RegisterTokens);
+        Context.SaveChanges();
+        NewRegisterUrl = string.Empty;
+        ShowRegisterUrlCreated = false;
+        CopyButtonText = "Copy";
+    }
+    
+    public void ResetState()
+    {
+        SearchValue = string.Empty;
+        NewRegisterUrl = string.Empty;
+        ShowRegisterUrlCreated = false;
+        CopyButtonText = "Copy";
+        Notify?.Invoke();
+        
+        StateHasChanged();
+    }
+
+    public void DoStateHasChanged()
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        CopyTextTimer?.Dispose();
+    }
+    
+}

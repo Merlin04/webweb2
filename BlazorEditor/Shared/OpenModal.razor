@@ -1,0 +1,115 @@
+@inject IJSRuntime JSRuntime
+@inject OMCSService OMCSService
+@using BlazorEditor.Data
+@implements IDisposable
+
+<div class="ui large modal" id="openModal">
+    <div class="header">
+        Open item
+    </div>
+    <div class="content">
+        <div class="ui segment">
+            <div class="ui two column grid">
+                <div class="four wide column">
+                    <OpenModalItems @ref="OpenModalItems"/>
+                </div>
+                <div class="twelve wide column" id="previewContainer">
+                    <div class="@(OMCSService.CurrentlySelected is NonSpecificItem ? "centerTextContainer " : "")ui segment" id="preview">
+                        @if (OMCSService.CurrentlySelected is Component previewC)
+                        {
+                            <div class="ui header">@previewC.Title</div>
+                            <div>Component</div>
+                        }
+                        else if (OMCSService.CurrentlySelected is Page previewP)
+                        {
+                            <div class="ui header">@previewP.Title</div>
+                            <div>Page</div>
+                        }
+                        else if (OMCSService.CurrentlySelected is Template previewT)
+                        {
+                            <div class="ui header">@previewT.Title</div>
+                            <div>Template</div>
+                        }
+                        else if (OMCSService.CurrentlySelected is Layout previewL)
+                        {
+                            <div class="ui header">@previewL.Title</div>
+                            <div>Layout</div>
+                        }
+                        else
+                        {
+                            <div class="ui grey header">Select an item</div>
+                        }
+                        @if (!(OMCSService.CurrentlySelected is NonSpecificItem))
+                        {
+                            <div class="ui segment" id="openModalCodePreviewSegment">
+                                <pre id="openModalCodePreviewPre"><code class="cshtml-razor" id="openModalCodePreview"></code></pre>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui cancel button">Cancel</div>
+        <div class="ui @(OMCSService.CurrentlySelected.Title is null ? "disabled " : "")approve button"
+             @onclick=@(e => { ItemSelected?.Invoke(OMCSService.CurrentlySelected); })>Open</div>
+    </div>
+</div>
+
+
+@code {
+
+    [Parameter]
+    public Action<dynamic> ItemSelected { get; set; }
+
+    public OpenModalItems OpenModalItems;
+
+    protected override void OnInitialized()
+    {
+        OMCSService.Notify += SetCS;
+    }
+
+    public async void SetCS()
+    {
+        await InvokeAsync(StateHasChanged);
+
+        if (OMCSService.CurrentlySelected is NonSpecificItem) return;
+        string contents = string.Empty;
+        switch (OMCSService.CurrentlySelected)
+        {
+            case Component previewC:
+                contents = previewC.HtmlContents;
+                break;
+            case Page previewP:
+                contents = previewP.HtmlContents;
+                break;
+            case Template previewT:
+                contents = previewT.HtmlContents;
+                break;
+            case Layout previewL:
+                contents = previewL.Contents;
+                break;
+        }
+        await JSRuntime.InvokeVoidAsync("setOpenModalPreviewContents", contents);
+    }
+    
+    public void Dispose()
+    {
+        OMCSService.Notify -= SetCS;
+    }
+
+    public void ResetModalState()
+    {
+        OMCSService.CurrentlySelected = new NonSpecificItem();
+        OpenModalItems.SearchValue = string.Empty;
+        
+        StateHasChanged();
+    }
+    
+    public async Task Show()
+    {
+        await JSRuntime.InvokeVoidAsync("showOpenDialog");
+    }
+    
+}

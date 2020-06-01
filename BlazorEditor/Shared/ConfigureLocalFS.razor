@@ -1,0 +1,39 @@
+@using BlazorEditor.Data
+@inject ApplicationDbContext Context
+@inject IJSRuntime JSRuntime
+
+<div class="ui segments">
+    <div class="ui form segment">
+        <div class="field">
+            <label>Deploy path</label>
+            <input type="text" @bind="DeployPath" @bind:event="oninput"/>
+        </div>
+    </div>
+    <div class="ui segment">
+        <div class="ui button" @onclick="SaveChanges">Save</div>
+    </div>
+</div>
+
+@code {
+
+    private string DeployPath { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ResetState();
+    }
+
+    private async Task SaveChanges()
+    {
+        (await Context.Configuration.FindAsync("localfs-path")).Contents = DeployPath;
+        await Context.SaveChangesAsync();
+        await JSRuntime.InvokeVoidAsync("showToast", "Changes saved", "", "bottom", "success");
+    }
+
+    public async Task ResetState()
+    {
+        DeployPath = (await Context.Configuration.FindAsync("localfs-path")).Contents;
+        StateHasChanged();
+    }
+    
+}

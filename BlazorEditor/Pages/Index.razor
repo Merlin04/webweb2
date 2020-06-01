@@ -1,0 +1,181 @@
+﻿@page "/"
+@using System.Security.Claims
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<AuthorizeView>
+    <Authorized>
+        <Editor @ref="_editor"/>
+        
+        @code {
+        
+            private Editor _editor;
+            private static Action _resetOpenModalState;
+            private static Action _resetNewModalState;
+            private static Action _resetManageItemsModalState;
+            private static Action _resetPreviewModalState;
+            private static Action _resetManageAccountModalState;
+            private static Action _resetConfigureModalState;
+            private static Action _resetManageFilesModalState;
+            private static Action _resetDeployGitHubModalState;
+            private static Action _manageFilesRefresh;
+            private static Action _manageFilesClearRenameValue;
+            private static Action _saveToDb;
+            
+            protected override void OnInitialized()
+            {
+                _resetOpenModalState = ResetOpenModalStatePrivate;
+                _resetNewModalState = ResetNewModalStatePrivate;
+                _resetManageItemsModalState = ResetManageItemsModalStatePrivate;
+                _resetPreviewModalState = ResetPreviewModalStatePrivate;
+                _resetManageAccountModalState = ResetManageAccountModalStatePrivate;
+                _resetConfigureModalState = ResetConfigureModalStatePrivate;
+                _resetManageFilesModalState = ResetManageFilesModalStatePrivate;
+                _resetDeployGitHubModalState = ResetDeployGitHubModalStatePrivate;
+                _manageFilesRefresh = ManageFilesRefreshPrivate;
+                _manageFilesClearRenameValue = ManageFilesClearRenameValuePrivate;
+                _saveToDb = SaveToDbPrivate;
+            }
+            
+            [JSInvokable]
+            public static void ResetOpenModalState()
+            {
+                _resetOpenModalState.Invoke();
+            }
+        
+            private void ResetOpenModalStatePrivate()
+            {
+                InvokeAsync(_editor.OModal.ResetModalState);
+            }
+        
+            [JSInvokable]
+            public static void ResetNewModalState()
+            {
+                _resetNewModalState.Invoke();
+            }
+        
+            private void ResetNewModalStatePrivate()
+            {
+                InvokeAsync(_editor.NModal.ResetModalState);
+            }
+        
+            [JSInvokable]
+            public static void ResetManageItemsModalState()
+            {
+                _resetManageItemsModalState.Invoke();
+            }
+        
+            private void ResetManageItemsModalStatePrivate()
+            {
+                InvokeAsync(_editor.MIModal.ResetModalState);
+            }
+        
+            [JSInvokable]
+            public static void ResetPreviewModalState()
+            {
+                _resetPreviewModalState.Invoke();
+            }
+        
+            private void ResetPreviewModalStatePrivate()
+            {
+                InvokeAsync(_editor.PModal.ResetModalState);
+            }
+
+            [JSInvokable]
+            public static void ResetManageAccountModalState()
+            {
+                _resetManageAccountModalState.Invoke();
+            }
+
+            private void ResetManageAccountModalStatePrivate()
+            {
+                InvokeAsync(_editor.MAModal.ResetModalState);
+            }
+
+            [JSInvokable]
+            public static void ResetConfigureModalState()
+            {
+                _resetConfigureModalState.Invoke();
+            }
+
+            private void ResetConfigureModalStatePrivate()
+            {
+                InvokeAsync(_editor.CModal.ResetModalState);
+            }
+
+            [JSInvokable]
+            public static void ResetManageFilesModalState()
+            {
+                _resetManageFilesModalState.Invoke();
+            }
+
+            private void ResetManageFilesModalStatePrivate()
+            {
+                InvokeAsync(_editor.MFModal.ResetModalState);
+            }
+
+            [JSInvokable]
+            public static void ResetDeployGitHubModalState()
+            {
+                _resetDeployGitHubModalState.Invoke();
+            }
+
+            private void ResetDeployGitHubModalStatePrivate()
+            {
+                InvokeAsync(_editor.DGModal.ResetModalState);
+            }
+            
+            [JSInvokable]
+            public static void SaveToDb()
+            {
+                _saveToDb.Invoke();
+            }
+        
+            private async void SaveToDbPrivate()
+            {
+                await InvokeAsync(_editor.SaveToDb);
+            }
+
+            [JSInvokable]
+            public static void ManageFilesRefresh()
+            {
+                _manageFilesRefresh.Invoke();
+            }
+
+            private void ManageFilesRefreshPrivate()
+            {
+                InvokeAsync(_editor.MFModal.RefreshFiles);
+            }
+
+            [JSInvokable]
+            public static void ManageFilesClearRenameValue()
+            {
+                _manageFilesClearRenameValue.Invoke();
+            }
+
+            private void ManageFilesClearRenameValuePrivate()
+            {
+                InvokeAsync(_editor.MFModal.ClearRenameValue);
+            }
+            
+        }
+    </Authorized>
+    <NotAuthorized>
+        @code {
+
+            [CascadingParameter]
+            private Task<AuthenticationState> authenticationStateTask { get; set; }
+            
+            protected override async Task OnAfterRenderAsync(bool firstRender)
+            {
+                AuthenticationState authState = await authenticationStateTask;
+                ClaimsPrincipal user = authState.User;
+                if (firstRender && !user.Identity.IsAuthenticated)
+                {
+                    await JSRuntime.InvokeVoidAsync("redirectPage", NavigationManager.ToAbsoluteUri("/Login").ToString());
+                }
+            }
+
+        }
+    </NotAuthorized>
+</AuthorizeView>

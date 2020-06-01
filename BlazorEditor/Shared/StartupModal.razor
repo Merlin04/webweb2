@@ -1,0 +1,47 @@
+@inject IJSRuntime JSRuntime
+
+<div class="ui modal" id="startupModal">
+    <div class="header">
+        Welcome
+    </div>
+    <div class="content">
+        <div class="ui placeholder segment">
+            <div class="ui two column very relaxed stackable grid">
+                <div class="column">
+                    <div class="ui big labeled icon button" @onclick="Editor.OModal.Show">
+                        <i class="folder open icon"></i>
+                        Open item
+                    </div>
+                </div>
+                <div class="middle aligned column">
+                    <div class="ui big labeled icon button" @onclick="Editor.NModal.Show">
+                        <i class="plus icon"></i>
+                        New item
+                    </div>
+                </div>
+            </div>
+            <div class="ui vertical divider">
+                Or
+            </div>
+        </div>
+        <div>
+            <div class="ui tiny button" style="margin-right: 0.5em;" @onclick="Editor.MIModal.Show">Manage items</div>
+            <div class="ui tiny button" style="margin-right: 0.5em;" @onclick="Editor.MFModal.Show">Manage files</div>
+            <div class="ui tiny button" style="margin-right: 0.5em;" @onclick="Editor.MAModal.Show">Manage your account</div>
+            <div class="ui tiny button" @onclick="Editor.CModal.Show">Configure webweb</div>
+            <div class="ui tiny button" style="float: right;" onclick="$('#logoutHiddenButton').click();">Log out</div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    public Editor Editor { get; set; }
+    
+    public async Task Show()
+    {
+        await JSRuntime.InvokeVoidAsync("showNewDialog");
+    }
+
+}

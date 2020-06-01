@@ -1,0 +1,22 @@
+@inject OMCSService OMCSService
+
+@if (OpenModalItems.SearchValue == string.Empty || Item.Title.ToLower().Contains(OpenModalItems.SearchValue.ToLower()))
+{
+    <a class="@(OMCSService.CurrentlySelected.GetType() == Item.GetType() && OMCSService.CurrentlySelected.Title == Item.Title ? "active " : "")item"
+       @onclick=@(e => { OMCSService.CurrentlySelected = Item; })>
+        @Item.Title
+    </a>
+}
+
+@code {
+
+    // Not sure why ReSharper gives this error, the code doesn't build if it isn't public
+    // ReSharper disable MemberCanBePrivate.Global
+    [CascadingParameter]
+    public OpenModalItems OpenModalItems { get; set; }
+
+    [Parameter]
+    public dynamic Item { get; set; }
+    // ReSharper restore MemberCanBePrivate.Global
+    
+}

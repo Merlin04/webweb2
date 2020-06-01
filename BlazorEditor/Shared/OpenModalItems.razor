@@ -1,0 +1,63 @@
+@inject ApplicationDbContext Context
+@inject OMCSService OMCSService
+@using BlazorEditor.Data
+@implements IDisposable
+
+<div class="ui fluid icon input">
+    <input @bind="SearchValue" @bind:event="oninput" type="text" placeholder="Search...">
+    @if (SearchValue == string.Empty)
+    {
+        <i class="search icon"></i>
+    }
+    else
+    {
+        <i class="circular close link icon"
+           @onclick=@(e => { SearchValue = string.Empty; })>
+        </i>
+    }
+</div>
+<div class="itemsMenu ui fluid secondary vertical menu">
+    <div class="header item">Components</div>
+    <CascadingValue Value=this>
+        @foreach (Component c in Context.Components)
+        {
+            <OpenModalItem item="@c"/>
+        }
+        <div class="header item">Pages</div>
+        @foreach (Page p in Context.Pages)
+        {
+            <OpenModalItem item="@p"/>
+        }
+        <div class="header item">Templates</div>
+        @foreach (Template t in Context.Templates)
+        {
+            <OpenModalItem item="@t"/>
+        }
+        <div class="header item">Layouts</div>
+        @foreach (Layout l in Context.Layouts)
+        {
+            <OpenModalItem item="@l"/>
+        }
+    </CascadingValue>
+</div>
+
+@code {
+
+    public string SearchValue { get; set; } = string.Empty;
+    
+    protected override void OnInitialized()
+    {
+        OMCSService.Notify += DoStateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        OMCSService.Notify -= DoStateHasChanged;
+    }
+    
+    public void DoStateHasChanged()
+    {
+        StateHasChanged();
+    }
+    
+}

@@ -1,0 +1,54 @@
+@inject IJSRuntime JSRuntime
+
+<div class="ui modal" id="configureModal">
+    <div class="header">
+        Configure webweb
+    </div>
+    <div class="content">
+        <div class="ui top attached tabular menu" id="configureModalTabs">
+            <div class="active item" data-tab="general">General</div>
+            <div class="item" data-tab="accounts">Accounts</div>
+            <div class="item" data-tab="git">GitHub</div>
+            <div class="item" data-tab="fs">Local FS</div>
+        </div>
+        <div class="ui bottom attached active tab segment" data-tab="general">
+            <ConfigureGeneral @ref="@ConfigureGeneral"/>
+        </div>
+        <div class="ui bottom attached tab segment" data-tab="accounts">
+            <ConfigureAccounts @ref="@ConfigureAccounts"/>
+        </div>
+        <div class="ui bottom attached tab segment" data-tab="git">
+            <ConfigureGit @ref="@ConfigureGit"/>
+        </div>
+        <div class="ui bottom attached tab segment" data-tab="fs">
+            <ConfigureLocalFS @ref="@ConfigureLocalFS"/>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui cancel button">Close</div>
+    </div>
+</div>
+
+@code {
+
+    private ConfigureGeneral ConfigureGeneral;
+    private ConfigureAccounts ConfigureAccounts;
+    private ConfigureGit ConfigureGit;
+    private ConfigureLocalFS ConfigureLocalFS;
+    
+    public async Task Show()
+    {
+        await JSRuntime.InvokeVoidAsync("showConfigureDialog");
+    }
+
+    public async Task ResetModalState()
+    {
+        await ConfigureGeneral.ResetState();
+        ConfigureAccounts.ResetState();
+        await ConfigureGit.ResetState();
+        await ConfigureLocalFS.ResetState();
+        await JSRuntime.InvokeVoidAsync("resetConfigureTabs");
+        StateHasChanged();
+    }
+
+}

@@ -1,0 +1,297 @@
+@using BlazorEditor.Data
+@using System.IO
+@using System.Text.RegularExpressions
+@using BlazorEditor.Utils
+@inject ApplicationDbContext Context
+@inject IJSRuntime JSRuntime
+
+<div class="ui large modal" id="manageFilesModal">
+    <div class="header">
+        Manage files
+    </div>
+    <div class="content">
+        <div class="ui header">@CurrentPath</div>
+        <form class="ui form" style="display: inline-block;">
+            <label for="fileUpload" class="ui labeled icon button" id="uploadFileButton"><i class="upload icon"></i>Upload</label>
+            <input type="file" name="FileUpload" id="fileUpload" onchange="uploadFile('@CurrentPath')" style="display: none;"/>
+        </form>
+        <div class="ui icon button" @onclick="e => { ShowCreateDirectory = !ShowCreateDirectory; }"><i class="folder plus icon"></i></div>
+        <div class="ui @(SelectedItem == string.Empty ? "disabled " : "")red icon button" @onclick="DeleteItem"><i class="trash icon"></i></div>
+        <div class="ui @(SelectedItem == string.Empty ? "disabled " : "")yellow icon button" id="renameButton"><i class="pencil icon"></i></div>
+        <div class="ui popup" id="renamePopup">
+            <div class="ui action input">
+                <input type="text" placeholder="Name" @bind="@RenameValue" @bind:event="oninput"/>
+                <div class="ui @(RenameValue == string.Empty || CheckIfItemExistsInPath(RenameValue) ? "disabled " : "")button" @onclick="RenameItem">Rename</div>
+            </div>
+            @if (CheckIfItemExistsInPath(RenameValue) && RenameValue != string.Empty)
+            {
+                <div class="ui error message">
+                    Name already in use.
+                </div>
+            }
+        </div>
+        <div class="ui @(CurrentPath == "/" ? "disabled " : "")icon button" @onclick="UpDirectory"><i class="up arrow icon"></i></div>
+        <div class="ui segments">
+            <div class="ui segment">
+                <div class="ui fluid icon input">
+                    <input @bind="SearchValue" @bind:event="oninput" type="text" placeholder="Search...">
+                    @if (SearchValue == string.Empty)
+                    {
+                        <i class="search icon"></i>
+                    }
+                    else
+                    {
+                        <i class="circular close link icon"
+                           @onclick=@(e => { SearchValue = string.Empty; })>
+                        </i>
+                    }
+                </div>
+            </div>
+            <div class="itemsMenu ui segment">
+                <table class="ui celled table">
+                    <tbody>
+                    <CascadingValue Value=this>
+                        @if (ShowCreateDirectory)
+                        {
+                            <tr>
+                                <td>
+                                    <i class="folder icon"></i>
+                                    <div class="ui transparent input">
+                                        <input type="text" placeholder="Name" @bind="@CreateDirectoryName" @bind:event="oninput"/>
+                                    </div>
+                                    <div class="ui @(CreateDirectoryName == string.Empty ? "disabled " : "")icon button" @onclick="CreateDirectory">
+                                        <i class="check icon"></i>
+                                    </div>
+                                    <div class="ui icon button" @onclick="e => { ShowCreateDirectory = false; }"><i class="times icon"></i></div>
+                                </td>
+                                <td class="collapsing"></td>
+                            </tr>
+                        }
+                        @foreach (string folderName in Directories.Where(folderName => folderName != "webwebResources"))
+                        {
+                            <ManageFilesItem ItemPath="@folderName" IsDirectory="@true"/>
+                        }
+                        @foreach (string fileName in Files)
+                        {
+                            <ManageFilesItem ItemPath="@fileName" IsDirectory="@false"/>
+                        }
+                    </CascadingValue>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui cancel button">Close</div>
+    </div>
+</div>
+
+
+@code {
+    
+    public string SearchValue { get; set; } = string.Empty;
+
+    private bool DirectoryJustChanged { get; set; }
+
+    private bool _showCreateDirectory;
+    
+    private bool ShowCreateDirectory
+    {
+        get => _showCreateDirectory;
+        set
+        {
+            CreateDirectoryName = string.Empty;
+            _showCreateDirectory = value;
+        }
+    }
+
+    private string CreateDirectoryName { get; set; }
+
+    private string RenameValue { get; set; } = string.Empty;
+    
+    private string _selectedItem = string.Empty;
+    private string _currentPath = "/";
+
+    public string SelectedItem
+    {
+        get => _selectedItem;
+        set
+        {
+            SelectedItemChanged?.Invoke();
+            if (DirectoryJustChanged)
+            {
+                _selectedItem = string.Empty;
+                DirectoryJustChanged = false;
+            }
+            else
+            {
+                _selectedItem = value;
+            }
+            StateHasChanged();
+        }
+    }
+
+    public string CurrentPath
+    {
+        get => _currentPath;
+        set
+        {
+            _currentPath = value;
+            RefreshFiles();
+            SearchValue = string.Empty;
+            DirectoryJustChanged = true;
+            StateHasChanged();
+        }
+    }
+
+    private List<string> Directories { get; set; } = GetDirectoriesInPath("/");
+    private List<string> Files { get; set; } = GetFilesInPath("/");
+    
+    public event Action Notify;
+    public event Action SelectedItemChanged;
+    
+    public void ResetModalState()
+    {
+        SearchValue = string.Empty;
+        ShowCreateDirectory = false;
+        RenameValue = string.Empty;
+        CurrentPath = "/";
+        SelectedItem = string.Empty;
+        Notify?.Invoke();
+        
+        StateHasChanged();
+    }
+    
+    public async Task Show()
+    {
+        await JSRuntime.InvokeVoidAsync("showManageFilesDialog");
+    }
+
+    public void DoStateHasChanged()
+    {
+        StateHasChanged();
+    }
+
+    public void RefreshFiles()
+    {
+        Directories = GetDirectoriesInPath(_currentPath);
+        Files = GetFilesInPath(_currentPath);
+        StateHasChanged();
+    }
+
+    public void ClearRenameValue()
+    {
+        RenameValue = string.Empty;
+        StateHasChanged();
+    }
+    
+    private void UpDirectory()
+    {
+        List<string> path = CurrentPath.Split("/").ToList();
+        path.RemoveAt(path.Count - 1);
+        string newPath = string.Join('/', path);
+        CurrentPath = newPath == string.Empty ? "/" : newPath;
+        SelectedItem = string.Empty;
+    }
+
+    private void CreateDirectory()
+    {
+        string newDirectoryPath = Path.Combine(MiscUtils.MapPath("wwwroot/"),
+            Regex.Replace(CurrentPath, "^\\/*", string.Empty), CreateDirectoryName.Replace("/", string.Empty));
+        if (MiscUtils.IsDirectoryTraversal(newDirectoryPath)) return;
+        ShowCreateDirectory = false;
+        Directory.CreateDirectory(newDirectoryPath);
+        RefreshFiles();
+    }
+
+    private void RenameItem()
+    {
+        string oldPath = Path.Combine(MiscUtils.MapPath("wwwroot/"),
+            Regex.Replace(CurrentPath, "^\\/*", string.Empty), SelectedItem.Replace("/", string.Empty));
+        string newPath = Path.Combine(MiscUtils.MapPath("wwwroot/"),
+            Regex.Replace(CurrentPath, "^\\/*", string.Empty), RenameValue);
+        if (!Path.GetFullPath(newPath).Contains(MiscUtils.MapPath("wwwroot/"))) return;
+        JSRuntime.InvokeVoidAsync("hideRenamePopup");
+        MoveItem(oldPath, newPath);
+        RefreshFiles();
+    }
+
+    private async Task DeleteItem()
+    {
+        string oldPath = Path.Combine(MiscUtils.MapPath("wwwroot/"),
+            Regex.Replace(CurrentPath, "^\\/*", string.Empty), SelectedItem.Replace("/", string.Empty));
+        string newFileName = SelectedItem.Replace("/", string.Empty);
+        for (int i = 1; CheckIfItemExists(Path.Combine(MiscUtils.MapPath("wwwroot/webwebResources/garbage/"), newFileName)); i++)
+        {
+            if (i == 1)
+            {
+                newFileName += ".1";
+            }
+            else if (i > 100)
+            {
+                await JSRuntime.InvokeVoidAsync("showToast", "Garbage failed", "You may need to empty the garbage.", "bottom", "error");
+                return;
+            }
+            else
+            {
+                newFileName = string.Join(".", newFileName.Split(".").SkipLast(1).Append(i.ToString()));
+            }
+        }
+        string newPath = Path.Combine(MiscUtils.MapPath("wwwroot/webwebResources/garbage/"), newFileName);
+        MoveItem(oldPath, newPath, true);
+        RefreshFiles();
+        await JSRuntime.InvokeVoidAsync("showToast", "File moved to garbage", "To empty the garbage, go to \"Configure webweb\" and click \"Empty garbage.\"", "bottom", "success");
+    }
+
+    private bool CheckIfItemExistsInPath(string path)
+    {
+        string fullPath = Path.Combine(MiscUtils.MapPath("wwwroot/"),
+            Regex.Replace(CurrentPath, "^\\/*", string.Empty), path);
+        return CheckIfItemExists(fullPath);
+    }
+
+    private static void MoveItem(string oldPath, string newPath, bool tryAgain = false)
+    {
+        try
+        {
+            if (Directory.Exists(oldPath))
+            {
+                Directory.Move(oldPath, newPath);
+            }
+            else if (File.Exists(oldPath))
+            {
+                File.Move(oldPath, newPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (ex is DirectoryNotFoundException && tryAgain)
+            {
+                // Probably because garbage directory does not exist
+                Directory.CreateDirectory(MiscUtils.MapPath("wwwroot/webwebResources/garbage"));
+                MoveItem(oldPath, newPath);
+            }
+            else
+            {
+                throw;
+            }
+        }
+    }
+    
+    private static bool CheckIfItemExists(string path)
+    {
+        if (!Path.GetFullPath(path).Contains(MiscUtils.MapPath("wwwroot/"))) return true;
+        return File.Exists(path) || Directory.Exists(path);
+    }
+    
+    private static List<string> GetFilesInPath(string path)
+    {
+        return Directory.GetFiles(MiscUtils.MapPath(Path.Join("wwwroot", path))).Select(p => p.Split('/').Last()).ToList();
+    }
+
+    private static List<string> GetDirectoriesInPath(string path)
+    {
+        return Directory.GetDirectories(MiscUtils.MapPath(Path.Join("wwwroot", path))).Select(p => p.Split('/').Last()).ToList();
+    }
+
+}

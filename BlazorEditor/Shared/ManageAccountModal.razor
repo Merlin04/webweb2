@@ -1,0 +1,154 @@
+@using Microsoft.AspNetCore.Identity
+@using BlazorEditor.Identity
+@using System.Security.Claims
+@using System.Reflection
+@using System.Text
+@using Newtonsoft.Json
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<div class="ui modal" id="manageAccountModal">
+    <div class="header">
+        Manage account
+    </div>
+    <div class="content">
+        <div class="ui segment">
+            <div class="ui header">Change password</div>
+            <div class="ui form">
+                <div class="field">
+                    <label>Current password</label>
+                    <input type="password" placeholder="Current password" @bind="OldPassword" @bind:event="oninput"/>
+                </div>
+                <div class="field">
+                    <label>New password</label>
+                    <input type="password" placeholder="New password" @bind="NewPassword" @bind:event="oninput"/>
+                </div>
+                <div class="field">
+                    <label>Confirm new password</label>
+                    <input type="password" placeholder="Confirm new password" @bind="ConfirmPassword" @bind:event="oninput"/>
+                </div>
+                <div class="ui button" @onclick="ChangePassword">Update password</div>
+            </div>
+            @if (NewPassword != ConfirmPassword || ShowErrorMessage)
+            {
+                @if (NewPassword != ConfirmPassword)
+                {
+                    <div class="ui error message">Password confirmation does not match.</div>
+                }
+                else
+                {
+                    <div class="ui error message">
+                        @ErrorMessage
+                    </div>
+                }
+            }
+            @if (ShowSuccessMessage)
+            {
+                <div class="ui success message">Password changed successfully</div>
+            }
+        </div>
+        <div class="ui segment">
+            <div class="ui header">Personal data</div>
+            <p>Your account contains personal data that you have provided.</p>
+            <div class="ui button" @onclick="DownloadPersonalData">Download data</div>
+            <br/><br/>
+            <p>To delete your account, please type your username here:</p>
+            <div class="ui input" style="width: 20em;">
+                <input type="text" placeholder="Type username to enable deletion" @bind="DeletionUsername" @bind:event="oninput"/>
+            </div>
+            @if (DeletionUsername == Username)
+            {
+                <div class="ui red button" @onclick="DeleteAccount">Delete account</div>
+            }
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui cancel button">Close</div>
+    </div>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; }
+    
+    private string DeletionUsername { get; set; }
+    private string Username { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; }
+    private bool ShowErrorMessage { get; set; }
+    private bool ShowSuccessMessage { get; set; }
+    private string OldPassword { get; set; }
+    private string NewPassword { get; set; }
+    private string ConfirmPassword { get; set; }
+    private ClaimsPrincipal User { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationState authState = await AuthenticationStateTask;
+        User = authState.User;
+        Username = User.Identity.Name;
+    }
+
+    public async Task Show()
+    {
+        await JSRuntime.InvokeVoidAsync("showManageAccountDialog");
+    }
+
+    public void ResetModalState()
+    {
+        DeletionUsername = string.Empty;
+        ErrorMessage = string.Empty;
+        OldPassword = string.Empty;
+        NewPassword = string.Empty;
+        ConfirmPassword = string.Empty;
+        ShowErrorMessage = false;
+        ShowSuccessMessage = false;
+        StateHasChanged();
+    }
+
+    private async Task ChangePassword()
+    {
+        ApplicationUser user = await UserManager.GetUserAsync(User);
+        IdentityResult changePasswordResult = await UserManager.ChangePasswordAsync(user, OldPassword, NewPassword);
+        if (!changePasswordResult.Succeeded)
+        {
+            ErrorMessage = "";
+            foreach (IdentityError error in changePasswordResult.Errors)
+            {
+                ErrorMessage += error.Description + "\n";
+            }
+            ShowErrorMessage = true;
+            ShowSuccessMessage = false;
+        }
+        else
+        {
+            ShowErrorMessage = false;
+            ShowSuccessMessage = true;
+            OldPassword = string.Empty;
+            NewPassword = string.Empty;
+            ConfirmPassword = string.Empty;
+        }
+    }
+
+    private async Task DeleteAccount()
+    {
+        ApplicationUser user = await UserManager.GetUserAsync(User);
+        await UserManager.DeleteAsync(user);
+        await JSRuntime.InvokeVoidAsync("redirectPage", NavigationManager.ToAbsoluteUri("/Logout").ToString());
+    }
+
+    private async Task DownloadPersonalData()
+    {
+        ApplicationUser user = await UserManager.GetUserAsync(User);
+        IEnumerable<PropertyInfo> personalDataProps = typeof(IdentityUser).GetProperties().Where(
+            prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)));
+        Dictionary<string, string> personalData = personalDataProps.ToDictionary(
+            p => p.Name, p => p.GetValue(user)?.ToString() ?? "null");
+        await JSRuntime.InvokeVoidAsync("saveAsFile", "PersonalData.json",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(personalData))));
+    }
+
+}

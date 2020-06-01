@@ -1,0 +1,42 @@
+@page "/Login"
+@model BlazorEditor.Pages.Identity.Login
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    Layout = "_Layout";
+}
+
+<div class="ui center aligned grid">
+    <div class="column" id="loginColumn">
+        <div class="ui segment">
+            <div class="ui large header">
+                Log in to webweb
+            </div>
+            <form class="ui form" method="post">
+                <div class="field">
+                    <label>Username</label>
+                    <input asp-for="Input.Username" type="text" placeholder="Username">
+                </div>
+                <div class="field">
+                    <label>Password</label>
+                    <input asp-for="Input.Password" type="password" placeholder="Password">
+                </div>
+                <div class="field">
+                    <div class="ui checkbox">
+                        <input asp-for="Input.RememberMe" type="checkbox" tabindex="0" class="hidden">
+                        <label>Remember me</label>
+                    </div>
+                </div>
+                <button type="submit" class="ui button">Login</button>
+            </form>
+            @if (Model.ModelState.ErrorCount != 0)
+            {
+                <div asp-validation-summary="All" class="ui error message"></div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+$('.ui.checkbox').checkbox();
+</script>

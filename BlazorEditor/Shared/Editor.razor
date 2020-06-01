@@ -1,0 +1,233 @@
+@using BlazorEditor.Data
+@using BlazorEditor.Compiler
+@inject IJSRuntime JSRuntime
+@inject ApplicationDbContext Context
+
+<div id="editor">
+    <div class="ui top attached tabular menu" id="tabs">
+        <div class="ui dropdown icon item" id="mainMenu">
+            <i class="bars icon"></i>
+            <div class="menu" id="dropdownMenu">
+                <div class="item" @onclick="SaveToDb">
+                    Save
+                </div>
+                <div class="item" @onclick="async e => { await OModal.Show(); }">
+                    Open...
+                </div>
+                <div class="item" @onclick="async e => { await NModal.Show(); }">
+                    New...
+                </div>
+                <div class="item" @onclick="Compile">
+                    Compile
+                </div>
+                <div class="item" @onclick="Deploy">
+                    Deploy
+                </div>
+                <div class="item" @onclick="async e => { await MIModal.Show(); }">
+                    Manage items...
+                </div>
+                <div class="item" @onclick="async e => { await MFModal.Show(); }">
+                    Manage files...
+                </div>
+                <div class="item" @onclick="async e => { await MAModal.Show(); }">
+                    Manage account...
+                </div>
+                <div class="item" @onclick="async e => { await CModal.Show(); }">
+                    Configure webweb...
+                </div>
+                <div class="item" @onclick="async e => { await PModal.Show(); }">
+                    Open preview...
+                </div>
+                <div class="item" onclick="$('#logoutHiddenButton').click();">
+                    Log out
+                </div>
+            </div>
+        </div>
+        <div class="right aligned item" id="version">
+            webweb v2.0
+        </div>
+    </div>
+    <div id="editorBody" class="ui bottom attached segment">
+        <div class="ui mini inverted secondary menu" id="subtabs"></div>
+        <div id="monacoContainer"></div>
+    </div>
+</div>
+
+<OpenModal @ref="@OModal" ItemSelected="@OpenModalItemSelected"/>
+<CascadingValue Value=this>
+    <NewModal @ref="@NModal" ItemSelected="@(async item => { await NewModalItemSelected(item); })"/>
+    <StartupModal/>
+</CascadingValue>
+<ManageItemsModal @ref="@MIModal"/>
+<PreviewModal @ref="@PModal"/>
+<ManageAccountModal @ref="@MAModal"/>
+<ConfigureModal @ref="@CModal"/>
+<ManageFilesModal @ref="@MFModal"/>
+<DeployGitHubModal @ref="@DGModal"/>
+<DeployFSModal @ref="@DFModal"/>
+
+<form method="post" action="/Logout" style="display: none;">
+    <button type="submit" onclick="disableBlazorReconnect()" id="logoutHiddenButton">Log out</button>
+</form>
+
+@code {
+
+    private Dictionary<int, dynamic> _tabs = new Dictionary<int, dynamic>();
+
+    public OpenModal OModal;
+    public NewModal NModal;
+    public ManageItemsModal MIModal;
+    public PreviewModal PModal;
+    public ManageAccountModal MAModal;
+    public ConfigureModal CModal;
+    public ManageFilesModal MFModal;
+    public DeployGitHubModal DGModal;
+    public DeployFSModal DFModal;
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("monacoInit");
+        }
+
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task OpenNewTab(dynamic item)
+    {
+        int newId;
+        
+        // Layouts only have "contents"
+        if (item is Layout l)
+        {
+            newId = await JSRuntime.InvokeAsync<int>("addEditorModel", new object[]
+            {
+                l.Title, l.Contents
+            });
+        }
+        else
+        {
+            newId = await JSRuntime.InvokeAsync<int>("addEditorModel", new object[]
+            {
+                item.Title, item.HtmlContents, item.CssContents, item.JsContents
+            });
+        }
+        
+        _tabs.Add(newId, item);
+        await JSRuntime.InvokeVoidAsync("addTab", newId);
+    }
+
+    private void OpenModalItemSelected(dynamic item)
+    {
+        if (item is NonSpecificItem) return;
+        OpenNewTab(item);
+    }
+
+    private async Task NewModalItemSelected(dynamic item)
+    {
+        await DbCommon.AddItem(Context, item);
+        
+        OpenNewTab(item);
+    }
+
+    public async Task SaveToDb()
+    {
+        List<List<string>> tabContents = await JSRuntime.InvokeAsync<List<List<string>>>("getTabContents");
+        Dictionary<int, List<string>> nonNullTabContents = new Dictionary<int, List<string>>();
+        for (int i = 0; i < tabContents.Count; i++)
+        {
+            if (!(tabContents[i] is null))
+            {
+                nonNullTabContents.Add(i, tabContents[i]);
+            }
+        }
+        foreach (KeyValuePair<int, List<string>> item in nonNullTabContents)
+        {
+            switch (_tabs[item.Key])
+            {
+                case Component c:
+                {
+                    Context.Entry(c).CurrentValues.SetValues(new Component
+                    {
+                        Title = c.Title,
+                        HtmlContents = item.Value[0],
+                        CssContents = item.Value[1],
+                        JsContents = item.Value[2]
+                    });
+                    break;
+                }
+                case Page p:
+                {
+                    Context.Entry(p).CurrentValues.SetValues(new Page
+                    {
+                        Title = p.Title,
+                        HtmlContents = item.Value[0],
+                        CssContents = item.Value[1],
+                        JsContents = item.Value[2]
+                    });
+                    break;
+                }
+                case Template t:
+                {
+                    Context.Entry(t).CurrentValues.SetValues(new Template
+                    {
+                        Title = t.Title,
+                        HtmlContents = item.Value[0],
+                        CssContents = item.Value[1],
+                        JsContents = item.Value[2]
+                    });
+                    break;
+                }
+                case Layout l:
+                {
+                    Context.Entry(l).CurrentValues.SetValues(new Layout
+                    {
+                        Title = l.Title,
+                        Contents = item.Value[0]
+                    });
+                    break;
+                }
+            }
+        }
+        await Context.SaveChangesAsync();
+        await JSRuntime.InvokeVoidAsync("showToast", "Success", "Save successful", "bottom", "success");
+    }
+
+    private async Task Deploy()
+    {
+        switch ((await Context.Configuration.FindAsync("deploy-method")).Contents)
+        {
+            case "github":
+            {
+                await DGModal.Show();
+                break;
+            }
+            case "fs":
+            {
+                await DFModal.Show();
+                break;
+            }
+            default:
+            {
+                await JSRuntime.InvokeVoidAsync("showToast", "Error", "No deploy method configured", "bottom", "error");
+                break;
+            }
+        }
+    }
+    
+    private async Task Compile()
+    {
+        await JSRuntime.InvokeVoidAsync("showToast", "Compiling...", "Compilation in progress", "bottom", "info");
+        try
+        {
+            Compiler.CompileAndStore(Context);
+            await JSRuntime.InvokeVoidAsync("showToast", "Success", "Compilation succeeded", "bottom", "success");
+            PModal.DoStateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("showToast", "Compilation failed", ex.Message, "bottom", "error");
+        }
+    }
+}

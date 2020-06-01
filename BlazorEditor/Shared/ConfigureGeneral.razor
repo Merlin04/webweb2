@@ -1,0 +1,67 @@
+@using BlazorEditor.Data
+@using System.IO
+@using BlazorEditor.Utils
+@inject ApplicationDbContext Context
+@inject IJSRuntime JSRuntime
+
+<div class="ui segments">
+    <div class="ui segment">
+        <div class="ui labeled icon button" @onclick="EmptyGarbage"><i class="trash icon"></i>Empty garbage</div>
+    </div>
+    <div class="ui segment">
+        <div class="ui header">Assemblies</div>
+        <div class="ui info message">Adding the name of an assembly to this list will make it available to use in items.</div>
+        <div class="ui fluid input">
+            <textarea @bind="@Assemblies" @bind:event="oninput" spellcheck="false" style="width: 100%"></textarea>
+        </div>
+    </div>
+    <div class="ui segment">
+        <div class="ui header">Deploy method</div>
+        <div class="grouped fields">
+            @foreach (KeyValuePair<string, string> choice in new Dictionary<string, string> {{"github", "GitHub"}, {"fs", "Local filesystem"}})
+            {
+                <div class="field">
+                    <div class="ui radio checkbox">
+                        <input type="radio" name="deployMethod" value="@choice.Key" checked="@(DeployMethod == choice.Key)" @onchange="@(() => { DeployMethod = choice.Key; })"/>
+                        <label>@choice.Value</label>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="ui segment">
+        <div class="ui button" @onclick="SaveChanges">Save</div>
+    </div>
+</div>
+
+@code {
+
+    private string Assemblies { get; set; }
+    private string DeployMethod { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ResetState();
+    }
+
+    private async Task SaveChanges()
+    {
+        (await Context.Configuration.FindAsync("assemblies")).Contents = Assemblies;
+        (await Context.Configuration.FindAsync("deploy-method")).Contents = DeployMethod;
+        await Context.SaveChangesAsync();
+        await JSRuntime.InvokeVoidAsync("showToast", "Changes saved", "", "bottom", "success");
+    }
+
+    private void EmptyGarbage()
+    {
+        Directory.GetFiles(MiscUtils.MapPath("wwwroot/webwebResources/garbage")).ToList().ForEach(File.Delete);
+    }
+    
+    public async Task ResetState()
+    {
+        Assemblies = (await Context.Configuration.FindAsync("assemblies")).Contents;
+        DeployMethod = (await Context.Configuration.FindAsync("deploy-method")).Contents;
+        StateHasChanged();
+    }
+    
+}

@@ -1,0 +1,168 @@
+@using BlazorEditor.GitHub
+@using BlazorEditor.Data
+@using System.IO
+@using BlazorEditor.Utils
+@inject IJSRuntime JSRuntime
+@inject ApplicationDbContext Context
+
+<div class="ui modal" id="deployFSModal">
+    <div class="content">
+        @if (ShowLoader)
+        {
+            <div class="ui huge active centered inline elastic loader"></div>
+            <div class="ui centered header">Deploying to local FS</div>
+        }
+        @if (ShowError)
+        {
+            <div style="text-align: center">
+                <i class="massive red exclamation circle icon"></i>
+            </div>
+            <div class="ui centered header">Error</div>
+        }
+        @if (ShowSuccess)
+        {
+            <div style="text-align: center">
+                <i class="massive green check circle outline icon"></i>
+            </div>
+            <div class="ui centered header">Success</div>
+        }
+        @if (ShowDeleteWarning)
+        {
+            <div style="text-align: center">
+                <i class="massive yellow exclamation icon"></i>
+            </div>
+            <div class="ui centered header">Warning</div>
+        }
+        <div style="text-align: center;">@StatusText</div>
+    </div>
+    @if (ShowError || ShowSuccess || ShowDeleteWarning)
+    {
+        <div class="actions">
+            @if (ShowDeleteWarning)
+            {
+                <div class="ui button" @onclick="Deploy">Continue</div>
+            }
+            <div class="ui cancel button">Close</div>
+        </div>
+    }
+</div>
+
+@code {
+
+    private bool ShowLoader { get; set; }
+    private bool ShowError { get; set; }
+    private bool ShowSuccess { get; set; }
+    private bool ShowDeleteWarning { get; set; } = true;
+    private string StatusText { get; set; }
+
+    public async Task Show()
+    {
+        await JSRuntime.InvokeVoidAsync("showDeployFSDialog");
+        StatusText = "Continuing will delete all files in the directory " +
+                     (await Context.Configuration.FindAsync("localfs-path")).Contents + 
+                     ". Are you sure you want to continue?";
+        StateHasChanged();
+    }
+
+    public void ResetModalState()
+    {
+        ShowLoader = false;
+        ShowError = false;
+        ShowSuccess = false;
+        ShowDeleteWarning = true;
+        StateHasChanged();
+    }
+
+    private async Task Deploy()
+    {
+        // Start the deployment
+        try
+        {
+            ShowDeleteWarning = false;
+            ShowLoader = true;
+            StateHasChanged();
+            StatusUpdate("Deleting old pages and files...", StatusType.Status);
+            string deployPath = (await Context.Configuration.FindAsync("localfs-path")).Contents;
+            DirectoryInfo di = new DirectoryInfo(deployPath);
+            di.EnumerateFiles().ForEachInEnumerable(file => file.Delete());
+            di.EnumerateDirectories().ForEachInEnumerable(dir => dir.Delete(true));
+            StatusUpdate("Saving pages...", StatusType.Status);
+            await Context.CompiledPages.ToList().ForEachAsync(async page =>
+            {
+                await File.WriteAllTextAsync(Path.Combine(deployPath, page.Title + ".html"), page.Contents);
+            });
+            StatusUpdate("Copying other files...", StatusType.Status);
+            string wwwrootPath = MiscUtils.MapPath("wwwroot");
+            Directory.EnumerateFiles(wwwrootPath).ForEachInEnumerable
+                (file => { File.Copy(file, Path.Join(deployPath, file.Split('/').Last())); });
+            Directory.EnumerateDirectories(wwwrootPath).ForEachInEnumerable
+                (directory => { DirectoryCopy(directory, Path.Join(deployPath, directory.Split('/').Last()), true); });
+            StatusUpdate("Deploy complete.", StatusType.Success);
+        }
+        catch (Exception ex)
+        {
+            StatusUpdate(ex.Message, StatusType.Error);
+        }
+    }
+    
+    private void StatusUpdate(string status, StatusType statusType)
+    {
+        StatusText = status;
+        switch (statusType)
+        {
+            case StatusType.Error:
+            {
+                ShowLoader = false;
+                ShowError = true;
+                break;
+            }
+            case StatusType.Success:
+            {
+                ShowLoader = false;
+                ShowSuccess = true;
+                break;
+            }
+        }
+        StateHasChanged();
+    }
+    
+    // https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
+    private static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs)
+    {
+        // Get the subdirectories for the specified directory.
+        DirectoryInfo dir = new DirectoryInfo(sourceDirName);
+
+        if (!dir.Exists)
+        {
+            throw new DirectoryNotFoundException(
+                "Source directory does not exist or could not be found: "
+                + sourceDirName);
+        }
+
+        DirectoryInfo[] dirs = dir.GetDirectories();
+        // If the destination directory doesn't exist, create it.
+        if (!Directory.Exists(destDirName))
+        {
+            Directory.CreateDirectory(destDirName);
+        }
+
+        // Get the files in the directory and copy them to the new location.
+        FileInfo[] files = dir.GetFiles();
+        foreach (FileInfo file in files)
+        {
+            string temppath = Path.Combine(destDirName, file.Name);
+            file.CopyTo(temppath, false);
+        }
+
+        // If copying subdirectories, copy them and their contents to new location.
+        if (copySubDirs)
+        {
+            foreach (DirectoryInfo subdir in dirs)
+            {
+                string temppath = Path.Combine(destDirName, subdir.Name);
+                DirectoryCopy(subdir.FullName, temppath, copySubDirs);
+            }
+        }
+    }
+
+}

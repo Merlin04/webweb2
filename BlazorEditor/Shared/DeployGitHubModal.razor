@@ -1,0 +1,94 @@
+@using BlazorEditor.GitHub
+@inject IJSRuntime JSRuntime
+@inject GitHubService GitHubService
+@implements IDisposable
+
+<div class="ui modal" id="deployGitHubModal">
+    <div class="content">
+        @if (ShowLoader)
+        {
+            <div class="ui huge active centered inline elastic loader"></div>
+            <div class="ui centered header">Deploying to GitHub</div>
+        }
+        @if (ShowError)
+        {
+            <div style="text-align: center">
+                <i class="massive red exclamation circle icon"></i>
+            </div>
+            <div class="ui centered header">Error</div>
+        }
+        @if (ShowSuccess)
+        {
+            <div style="text-align: center">
+                <i class="massive green check circle outline icon"></i>
+            </div>
+            <div class="ui centered header">Success</div>
+        }
+        <div style="text-align: center;">@StatusText</div>
+    </div>
+    @if (ShowError || ShowSuccess)
+    {
+        <div class="actions">
+            <div class="ui cancel button">Close</div>
+        </div>
+    }
+</div>
+
+@code {
+
+    private bool ShowLoader { get; set; } = true;
+    private bool ShowError { get; set; }
+    private bool ShowSuccess { get; set; }
+    private string StatusText { get; set; }
+    
+    public async Task Show()
+    {
+        await JSRuntime.InvokeVoidAsync("showDeployGitHubDialog");
+        // Start the deployment
+        GitHubService.StatusUpdate += StatusUpdate;
+        try
+        {
+            await GitHubService.DeploySite();
+        }
+        catch (Exception ex)
+        {
+            StatusUpdate(ex.Message, StatusType.Error);
+        }
+    }
+
+    public void ResetModalState()
+    {
+        ShowLoader = true;
+        ShowError = false;
+        ShowSuccess = false;
+        StatusText = String.Empty;
+        StateHasChanged();
+    }
+
+    private void StatusUpdate(string status, StatusType statusType)
+    {
+        StatusText = status;
+        switch (statusType)
+        {
+            case StatusType.Error:
+            {
+                ShowLoader = false;
+                ShowError = true;
+                break;
+            }
+            case StatusType.Success:
+            {
+                ShowLoader = false;
+                ShowSuccess = true;
+                break;
+            }
+        }
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        GitHubService.StatusUpdate -= StatusUpdate;
+    }
+
+}

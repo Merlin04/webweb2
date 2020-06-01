@@ -1,0 +1,56 @@
+@using System.IO
+@implements IDisposable
+
+@if (ManageFilesModal.SearchValue == string.Empty || ItemPath.ToLower().Contains(ManageFilesModal.SearchValue.ToLower()))
+{
+    <tr class="@(ManageFilesModal.SelectedItem == ItemPath ? "active" : string.Empty)">
+        <td @onclick="() => { ManageFilesModal.SelectedItem = ManageFilesModal.SelectedItem == ItemPath ? string.Empty : ItemPath; }">
+            @if (IsDirectory)
+            {
+                <i class="folder icon"></i>
+                <a href="#" @onclick="() => { ManageFilesModal.CurrentPath = Path.Join(ManageFilesModal.CurrentPath, ItemPath); }">@ItemPath</a>
+            }
+            else
+            {
+                <i class="file icon"></i>
+                @ItemPath
+            }
+        </td>
+        <td class="collapsing">
+            @if (!IsDirectory)
+            {
+                <a class="ui icon button" href="@Path.Join(ManageFilesModal.CurrentPath, ItemPath)"><i class="download icon"></i></a>
+            }
+        </td>
+    </tr>
+}
+
+@code {
+
+    [CascadingParameter]
+    public ManageFilesModal ManageFilesModal { get; set; }
+    
+    [Parameter]
+    public string ItemPath { get; set; }
+    
+    [Parameter]
+    public bool IsDirectory { get; set; }
+
+    protected override void OnInitialized()
+    {
+        ManageFilesModal.SelectedItemChanged += ItemChangedListener;
+        
+        base.OnInitialized();
+    }
+
+    private void ItemChangedListener()
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ManageFilesModal.SelectedItemChanged -= ItemChangedListener;
+    }
+
+}

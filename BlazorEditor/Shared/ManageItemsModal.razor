@@ -1,0 +1,82 @@
+@using BlazorEditor.Data
+@inject ApplicationDbContext Context
+@inject IJSRuntime JSRuntime
+
+<div class="ui large modal" id="manageItemsModal">
+    <div class="header">
+        Manage items
+    </div>
+    <div class="content">
+        <div class="ui segments">
+            <div class="ui segment">
+                <div class="ui fluid icon input">
+                    <input @bind="SearchValue" @bind:event="oninput" type="text" placeholder="Search...">
+                    @if (SearchValue == string.Empty)
+                    {
+                        <i class="search icon"></i>
+                    }
+                    else
+                    {
+                        <i class="circular close link icon"
+                           @onclick=@(e => { SearchValue = string.Empty; })>
+                        </i>
+                    }
+                </div>
+            </div>
+            <div class="itemsMenu ui segment">
+                <table class="ui celled table" id="itemsMenu">
+                    <tbody>
+                    <CascadingValue Value=this>
+                        @foreach (Component c in Context.Components)
+                        {
+                            <ManageItem item="@c"/>
+                        }
+                        @foreach (Page p in Context.Pages)
+                        {
+                            <ManageItem item="@p"/>
+                        }
+                        @foreach (Template t in Context.Templates)
+                        {
+                            <ManageItem item="@t"/>
+                        }
+                        @foreach (Layout l in Context.Layouts)
+                        {
+                            <ManageItem item="@l"/>
+                        }
+                    </CascadingValue>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui cancel button">Close</div>
+    </div>
+</div>
+
+
+@code {
+    
+    public string SearchValue { get; set; } = string.Empty;
+    
+    public event Action Notify;
+
+    public void ResetModalState()
+    {
+        SearchValue = string.Empty;
+        Notify?.Invoke();
+        
+        StateHasChanged();
+    }
+    
+    public async Task Show()
+    {
+        await JSRuntime.InvokeVoidAsync("showManageItemsDialog");
+    }
+
+    public void DoStateHasChanged()
+    {
+        StateHasChanged();
+    }
+    
+}

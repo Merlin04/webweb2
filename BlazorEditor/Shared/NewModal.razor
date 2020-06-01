@@ -1,0 +1,175 @@
+@using BlazorEditor.Data
+@using BlazorEditor.Utils
+@inject ApplicationDbContext Context
+@inject IJSRuntime JSRuntime
+
+<div class="ui large modal" id="newModal">
+    <div class="header">
+        New item
+    </div>
+    <div class="content">
+        <div class="ui form">
+            <div class="field">
+                <label>Type</label>
+                <div class="ui selection dropdown" id="newItemTypeDropdown">
+                    <input type="hidden" @bind="@ItemType">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">Select one...</div>
+                    <div class="menu">
+                        <div class="item" data-value="Component">Component</div>
+                        <div class="item" data-value="Page">Page</div>
+                        <div class="item" data-value="Template">Template</div>
+                        <div class="item" data-value="Layout">Layout</div>
+                    </div>
+                </div>
+            </div>
+            @* Controlling the CSS display property instead of just using @if has to be done because the Fomantic
+            components are initialized when the page loads, removing them and adding them will make them not initialized *@
+            <div style="@(ItemType is null ? "display: none" : "")">
+                <div class="field">
+                    <label>Title</label>
+                    <input type="text" placeholder="Title" @bind="@ItemTitle" @bind:event="oninput">
+                </div>
+                <div style="@(ItemType != "Page" ? "display: none" : "")">
+                    <div class="field">
+                        <div class="ui checkbox">
+                            <input type="checkbox" class="hidden" @bind="@UseTemplate">
+                            <label>Use template</label>
+                        </div>
+                    </div>
+
+                    <div class="field" style="@(!UseTemplate ? "display: none" : "")">
+                        <label>Template</label>
+                        <div class="ui selection dropdown">
+                            <input type="hidden" @bind="@TemplateTitle">
+                            <i class="dropdown icon"></i>
+                            <div class="default text">Select one...</div>
+                            <div class="menu">
+                                @foreach (Template t in Context.Templates)
+                                {
+                                    <div class="item" data-value="@t.Title">@t.Title</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (DbCommon.TitleInUse(Context, ItemTitle, ItemType))
+            {
+                <div class="ui error message" style="display: inherit;">That title is already in use.</div>
+            }
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui cancel button">Cancel</div>
+        <div class="ui @(!AllFieldsFilled() ? "disabled " : "")approve button"
+             @onclick=@(e => { ItemSelected?.Invoke(GetNewItem()); OtherModalStateHasChanged(); })>Create</div>
+    </div>
+</div>
+
+@code {
+    
+    [CascadingParameter]
+    public Editor Editor { get; set; }
+    
+    [Parameter]
+    public Action<dynamic> ItemSelected { get; set; }
+
+    private string ItemType { get; set; }
+    private string ItemTitle { get; set; } = string.Empty;
+    private bool UseTemplate { get; set; }
+    private string TemplateTitle { get; set; }
+    
+    private bool AllFieldsFilled()
+    {
+        if (ItemType is null)
+            return false;
+        if (ItemTitle == string.Empty)
+            return false;
+        if (DbCommon.TitleInUse(Context, ItemTitle, ItemType))
+            return false;
+        if (UseTemplate && TemplateTitle is null)
+            return false;
+        
+        return true;
+    }
+
+    private dynamic GetNewItem()
+    {
+        switch (ItemType)
+        {
+            case "Component":
+            {
+                return new Component
+                {
+                    Title = ItemTitle,
+                    HtmlContents = NewItemDefaultValues.ComponentValues[0],
+                    CssContents = NewItemDefaultValues.ComponentValues[1],
+                    JsContents = NewItemDefaultValues.ComponentValues[2]
+                };
+            }
+            case "Page":
+            {
+                if (UseTemplate)
+                {
+                    Template t = Context.Templates.Find(TemplateTitle);
+                    return new Page
+                    {
+                        Title = ItemTitle,
+                        HtmlContents = t.HtmlContents,
+                        CssContents = t.CssContents,
+                        JsContents = t.JsContents
+                    };
+                }
+                return new Page
+                {
+                    Title = ItemTitle,
+                    HtmlContents = NewItemDefaultValues.PageValues[0],
+                    CssContents = NewItemDefaultValues.PageValues[1],
+                    JsContents = NewItemDefaultValues.PageValues[2]
+                };
+            }
+            case "Template":
+            {
+                return new Template
+                {
+                    Title = ItemTitle,
+                    HtmlContents = NewItemDefaultValues.PageValues[0],
+                    CssContents = NewItemDefaultValues.PageValues[1],
+                    JsContents = NewItemDefaultValues.PageValues[2]
+                };
+            }
+            case "Layout":
+            {
+                return new Layout
+                {
+                    Title = ItemTitle,
+                    Contents = NewItemDefaultValues.LayoutValues[0]
+                };
+            }
+        }
+        return new NonSpecificItem { Title = ItemTitle };
+    }
+
+    private void OtherModalStateHasChanged()
+    {
+        Editor.OModal.OpenModalItems.DoStateHasChanged();
+        Editor.MIModal.DoStateHasChanged();
+    }
+
+    public async Task ResetModalState()
+    {
+        ItemType = null;
+        ItemTitle = string.Empty;
+        UseTemplate = false;
+        TemplateTitle = null;
+
+        StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("resetNewItemDropdown");
+    }
+    
+    public async Task Show()
+    {
+        await JSRuntime.InvokeVoidAsync("showNewDialog");
+    }
+}

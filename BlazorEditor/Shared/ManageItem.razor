@@ -1,0 +1,172 @@
+@using Microsoft.EntityFrameworkCore
+@using shortid
+@using BlazorEditor.Data
+@inject ApplicationDbContext Context
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+@if (ManageItemsModal.SearchValue == string.Empty || Item.Title.ToLower().Contains(ManageItemsModal.SearchValue.ToLower()))
+{
+    <tr>
+        <td>@Item.Title</td>
+        <td class="collapsing">@ItemType</td>
+        <td class="collapsing">
+            <div class="popupTrigger ui tiny icon button"
+                 @onclick="OpenEdit">
+                <i class="pencil icon"></i>
+            </div>
+            <div class="popupTrigger ui red tiny icon button"
+                 @onclick="OpenDelete">
+                <i class="trash icon"></i>
+            </div>
+        </td>
+    </tr>
+    <tr class="transition hidden" id="@TransitionId">
+        <td colspan="3">
+            @if (ShowRename)
+            {
+                <div class="ui action input">
+                    <input type="text" placeholder="New title" @bind="@RenameValue" @bind:event="oninput">
+                    <div class="ui @(DbCommon.TitleInUse(Context, RenameValue, ItemType) ? "disabled " : "") button" @onclick="EditTitle">Rename</div>
+                </div>
+                @if (DbCommon.TitleInUse(Context, RenameValue, ItemType))
+                {
+                    <br/><br/>
+                    <div class="ui error message" style="display: inherit;">That title is already in use.</div>
+                }
+            }
+            @if (ShowDelete)
+            {
+                <div class="ui header">Delete item</div>
+                <p>Deleting an item cannot be undone.</p>
+                <div class="ui button" @onclick="async e => { await TransitionItem(); await DeleteItem(); ManageItemsModal.DoStateHasChanged(); }">Delete</div>
+            }
+        </td>
+    </tr>
+}
+
+@code {
+
+    // Not sure why ReSharper gives this error, the code doesn't build if it isn't public
+    // ReSharper disable MemberCanBePrivate.Global
+    [CascadingParameter]
+    public ManageItemsModal ManageItemsModal { get; set; }
+
+    [Parameter]
+    public dynamic Item { get; set; }
+    // ReSharper restore MemberCanBePrivate.Global
+
+    private string TransitionId { get; set; }
+    private string ItemType { get; set; }
+
+    private string RenameValue { get; set; }
+    
+    private bool ShowRename { get; set; }
+    private bool ShowDelete { get; set; }
+    
+    private Action NotifyListener { get; set; } 
+    
+    protected override void OnInitialized()
+    {
+        ItemType = Item.GetType().ToString().Split('.')[2];
+        TransitionId = ShortId.Generate() + "Transition";
+        NotifyListener = async () => { await ResetState(); };
+        ManageItemsModal.Notify += NotifyListener;
+        
+        base.OnInitialized();
+    }
+
+    private async Task EditTitle()
+    {
+        await TransitionItem();
+        ShowRename = false;
+        
+        //dynamic newItem = Item;
+        //newItem.Title = RenameValue;
+        Component newItem = new Component
+        {
+            Title = RenameValue,
+            HtmlContents = Item.HtmlContents,
+            CssContents = Item.CssContents,
+            JsContents = Item.JsContents
+        };
+        
+        await DeleteItem();
+        await DbCommon.AddItem(Context, newItem);
+        ManageItemsModal.DoStateHasChanged();
+    }
+
+    private async Task DeleteItem()
+    {
+        ShowDelete = false;
+        
+        Context.Entry(Item).State = EntityState.Deleted;
+        await Context.SaveChangesAsync();
+    }
+
+    private async Task TransitionItem()
+    {
+        await JSRuntime.InvokeVoidAsync("doTransition", TransitionId);
+    }
+
+    private async Task OpenEdit()
+    {
+        bool doTransition = !ShowRename && !ShowDelete;
+        
+        if (!ShowRename)
+        {
+            ShowRename = true;
+            ShowDelete = false;
+        }
+        else
+        {
+            ShowRename = false;
+            ShowDelete = false;
+            doTransition = true;
+        }
+
+        if (doTransition)
+        {
+            await TransitionItem();
+        }
+    }
+
+    private async Task OpenDelete()
+    {
+        bool doTransition = !ShowRename && !ShowDelete;
+        
+        if (!ShowDelete)
+        {
+            ShowRename = false;
+            ShowDelete = true;
+        }
+        else
+        {
+            ShowRename = false;
+            ShowDelete = false;
+            doTransition = true;
+        }
+
+        if (doTransition)
+        {
+            await TransitionItem();
+        }
+    }
+
+    private async Task ResetState()
+    {
+        if (ShowRename || ShowDelete)
+        {
+            await TransitionItem();
+        }
+        ShowRename = false;
+        ShowDelete = false;
+        RenameValue = null;
+    }
+
+    public void Dispose()
+    {
+        ManageItemsModal.Notify -= NotifyListener;
+    }
+    
+}

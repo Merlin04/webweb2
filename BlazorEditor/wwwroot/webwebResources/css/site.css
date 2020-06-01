@@ -1,0 +1,313 @@
+/*app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+body {
+    margin-top: 1em;
+    margin-left: 1em;
+    margin-right: 1em;
+    height: auto;
+    background-color: #252526;
+    color: white;
+}
+
+.item {
+    color: white !important;
+}
+
+#tabs > .active.item {
+    background-color: #1e1e1e !important;
+}
+
+#editorBody {
+    background-color: #1e1e1e;
+}
+
+#loader {
+    background-color: #1e1e1e;
+}
+
+#mainMenu .menu.transition {
+    background-color: #1e1e1e !important;
+    border: 1px solid !important;
+}
+
+#mainMenu .menu.transition > * {
+    color: white !important;
+}
+
+.tabClose { display: none !important; }
+#tabs > .tab:hover > .tabClose.closeActive { display: inline-block !important; }
+
+/* Reset the color changes for modals 
+.ui.modal * {
+    color: initial !important;
+}
+
+.itemsMenu {
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-right: 1em;
+}
+
+#preview {
+    width: 100%;
+}
+
+#previewContainer {
+    display: flex;
+}
+
+.centerTextContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ui.grey.header {
+    color: #767676 !important;
+}
+
+.placeholder.segment {
+    min-height: 12rem !important;
+}
+
+#previewModal > .content {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#previewModal > .content > .ui.placeholder.segment {
+    flex: 1;
+}
+
+#previewModal > .content > .ui.placeholder.segment > .ui.primary.button {
+    color: #fff !important;
+}
+
+#previewToolbar {
+    border-bottom: 1px solid rgba(34,36,38,.15);
+    margin-bottom: 1.5rem;
+}
+
+#previewToolbar > .ui.header {
+    display: inline-block;
+}
+
+#previewToolbar > .ui.dropdown {
+    margin-left: 1em;
+    margin-bottom: 1.5rem;
+}
+
+#previewToolbar > .ui.button {
+    margin-left: 1em;
+}
+
+#previewIframeContainer {
+    display: flex;
+    flex: 1;
+}
+
+#previewIframe {
+    flex: 1;
+}
+
+#loginColumn {
+    max-width: 800px;
+    text-align: inherit;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+#monacoContainer {
+    height: calc(100vh - 10.37em);
+}
+
+.ui.modal .button {
+    color: rgba(0,0,0,.6) !important;
+}
+
+.ui.icon.button i {
+    color: rgba(0,0,0,.6) !important;
+}*/
+
+app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+body {
+    margin-top: 1em;
+    margin-left: 1em;
+    margin-right: 1em;
+    height: auto;
+    background-color: #252526;
+}
+
+#main {
+    color: white;
+}
+
+#tabs .item {
+    color: white !important;
+}
+
+#tabs > .active.item {
+    background-color: #1e1e1e !important;
+}
+
+#editorBody {
+    background-color: #1e1e1e;
+}
+
+#loader {
+    background-color: #1e1e1e;
+}
+
+#mainMenu .menu.transition {
+    background-color: #1e1e1e !important;
+    border: 1px solid !important;
+}
+
+#mainMenu .menu.transition > * {
+    color: white !important;
+}
+
+.tabClose { display: none !important; }
+#tabs > .tab:hover > .tabClose.closeActive { display: inline-block !important; }
+
+.itemsMenu {
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-right: 1em;
+}
+
+#preview {
+    width: 100%;
+}
+
+#previewContainer {
+    display: flex;
+}
+
+.centerTextContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ui.grey.header {
+    color: #767676 !important;
+}
+
+.placeholder.segment {
+    min-height: 12rem !important;
+}
+
+#previewModal > .content {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#previewModal > .content > .ui.placeholder.segment {
+    flex: 1;
+}
+
+#previewModal > .content > .ui.placeholder.segment > .ui.primary.button {
+    color: #fff !important;
+}
+
+#previewToolbar {
+    border-bottom: 1px solid rgba(34,36,38,.15);
+    margin-bottom: 1.5rem;
+}
+
+#previewToolbar > .ui.header {
+    display: inline-block;
+}
+
+#previewToolbar > .ui.dropdown {
+    margin-left: 1em;
+    margin-bottom: 1.5rem;
+}
+
+#previewToolbar > .ui.button {
+    margin-left: 1em;
+}
+
+#previewIframeContainer {
+    display: flex;
+    flex: 1;
+}
+
+#previewIframe {
+    flex: 1;
+}
+
+#loginColumn {
+    max-width: 800px;
+    text-align: inherit;
+}
+
+#openModalCodePreviewSegment {
+    max-height: calc(50vh + 1rem + 38px - 2rem - 23.15px - 1rem - 19.6px - 1rem);
+    overflow-y: auto;
+}
+
+#openModalCodePreviewPre {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+#monacoContainer {
+    height: calc(100vh - 10.37em);
+}
+/*
+.ui.modal .button {
+    color: rgba(0,0,0,.6) !important;
+}
+
+.ui.icon.button i {
+    color: rgba(0,0,0,.6) !important;
+}*/

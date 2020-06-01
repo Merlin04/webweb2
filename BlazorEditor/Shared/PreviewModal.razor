@@ -1,0 +1,86 @@
+@using BlazorEditor.Data
+@inject IJSRuntime JSRuntime
+@inject ApplicationDbContext Context
+
+<div class="ui overlay fullscreen modal" id="previewModal">
+    <div class="content">
+        @if (!Context.CompiledPages.Any())
+        {
+            <div class="ui placeholder segment">
+                <div class="ui huge icon header">
+                    <i class="exclamation circle icon"></i>
+                    You have no compiled pages.
+                </div>
+                <div class="ui primary button" onclick="$('#previewModal').modal('hide');">Close</div>
+            </div>
+        }
+        else
+        {
+            <div id="previewToolbar">
+                <div class="ui header">Preview</div>
+                <div class="ui search selection dropdown" id="previewModalDropdown">
+                    <input type="hidden" @bind="@PreviewPage">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">Select page...</div>
+                    <div class="menu">
+                        @foreach (CompiledPage p in Context.CompiledPages)
+                        {
+                            <div class="item" data-value="@p.Title">@p.Title</div>
+                        }
+                    </div>
+                </div>
+                <div class="ui button" onclick="$('#previewModal').modal('hide');">Close</div>
+            </div>
+            <div id="previewIframeContainer">
+                <iframe src="about:blank" id="previewIframe"></iframe>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+
+    private string _previewPage = string.Empty;
+    private string PreviewPage
+    {
+        get => _previewPage;
+        set
+        {
+            _previewPage = value;
+            try
+            {
+                JSRuntime.InvokeVoidAsync("setPreviewIframeContent", Context.CompiledPages.Find(_previewPage).Contents);
+            }
+            catch (Exception ex)
+            {
+                if (!(ex is NullReferenceException))
+                {
+                    throw;
+                }
+            }
+        }
+    }
+
+    public async Task Show()
+    {
+        if (_previewPage != string.Empty)
+        {
+            await JSRuntime.InvokeVoidAsync("setPreviewIframeContent", (await Context.CompiledPages.FindAsync(_previewPage)).Contents);
+        }
+        await JSRuntime.InvokeVoidAsync("showPreviewDialog");
+    }
+    
+    public async Task ResetModalState()
+    {
+        PreviewPage = string.Empty;
+
+        StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("resetPreviewModalDropdown");
+        await JSRuntime.InvokeVoidAsync("setPreviewIframeContent", "");
+    }
+
+    public void DoStateHasChanged()
+    {
+        StateHasChanged();
+    }
+}

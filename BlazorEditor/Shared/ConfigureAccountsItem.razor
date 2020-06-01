@@ -1,0 +1,79 @@
+@using shortid
+@using BlazorEditor.Identity
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+@if (ConfigureAccounts.SearchValue == string.Empty || User.UserName.ToLower().Contains(ConfigureAccounts.SearchValue.ToLower()))
+{
+    <tr>
+        <td>@User.UserName</td>
+        <td class="collapsing">
+            <div class="popupTrigger ui red tiny icon button"
+                 @onclick="OpenDelete">
+                <i class="trash icon"></i>
+            </div>
+        </td>
+    </tr>
+    <tr class="transition hidden" id="@TransitionId">
+        <td colspan="2">
+            <div class="ui header">Delete user</div>
+            <p>Deleting a user cannot be undone.</p>
+            <div class="ui button" @onclick="async e => { await TransitionItem(); await DeleteUser(); ConfigureAccounts.DoStateHasChanged(); }">Delete</div>
+        </td>
+    </tr>
+}
+
+@code {
+    
+    [CascadingParameter]
+    public ConfigureAccounts ConfigureAccounts { get; set; }
+
+    [Parameter]
+    public ApplicationUser User { get; set; }
+
+    private string TransitionId { get; set; }
+    private bool ShowDelete { get; set; }
+    
+    private Action NotifyListener { get; set; } 
+    
+    protected override void OnInitialized()
+    {
+        TransitionId = ShortId.Generate() + "AccountTransition";
+        NotifyListener = async () => { await ResetState(); };
+        ConfigureAccounts.Notify += NotifyListener;
+        
+        base.OnInitialized();
+    }
+
+    private async Task DeleteUser()
+    {
+        await UserManager.DeleteAsync(User);
+    }
+
+    private async Task TransitionItem()
+    {
+        await JSRuntime.InvokeVoidAsync("doTransition", TransitionId);
+    }
+
+    private async Task OpenDelete()
+    {
+        ShowDelete = !ShowDelete;
+        await TransitionItem();
+    }
+
+    private async Task ResetState()
+    {
+        if (ShowDelete)
+        {
+            await TransitionItem();
+        }
+    }
+
+    public void Dispose()
+    {
+        ConfigureAccounts.Notify -= NotifyListener;
+    }
+    
+}

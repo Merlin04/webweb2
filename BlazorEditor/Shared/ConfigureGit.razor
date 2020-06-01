@@ -1,0 +1,87 @@
+@using BlazorEditor.Data
+@using BlazorEditor.GitHub
+
+@inject IJSRuntime JSRuntime
+@inject ApplicationDbContext Context
+@inject GitHubService GitHubService
+
+<div class="ui segments">
+    <div class="ui form segment">
+        <div class="field">
+            <div class="ui info message">
+                To get a token, open your GitHub settings, go to Developer settings -> Personal access tokens, and generate a new token with Repo permissions.
+            </div>
+            <label>GitHub API token</label>
+            <input type="password" @bind="ApiToken" @bind:event="oninput"/>
+        </div>
+        <div class="ui button" @onclick="SaveGitHubToken">Save</div>
+    </div>
+    <div class="ui form segment">
+        <div class="field">
+            <label>Name of repository</label>
+            <input type="text" placeholder="your-username/repo-name" @bind="RepoName" @bind:event="oninput"/>
+        </div>
+        <div class="field">
+            <label>Destination</label>
+            <div class="ui selection dropdown">
+                <input type="hidden" @bind="Destination"/>
+                <i class="dropdown icon"></i>
+                <div class="default text">Destination</div>
+                <div class="menu">
+                    <div class="item" data-value="master">
+                        <div class="ui tiny header">master branch</div>
+                        <label>Use the entire <code>master</code> branch.</label>
+                    </div>
+                    <div class="item" data-value="docs">
+                        <div class="ui tiny header">master branch /docs folder</div>
+                        <label>Use only the <code>/docs</code> folder.</label>
+                    </div>
+                    <div class="item" data-value="gh-pages">
+                        <div class="ui tiny header">gh-pages branch</div>
+                        <label>Use the entire <code>gh-pages</code> branch.</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ui button" @onclick="SaveGitHubInformation">Save</div>
+    </div>
+</div>
+
+@code {
+
+    private string ApiToken { get; set; }
+    private string RepoName { get; set; }
+    private string Destination { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ResetState();
+    }
+
+    private async Task SaveGitHubToken()
+    {
+        (await Context.Configuration.FindAsync("github-token")).Contents = ApiToken;
+        await Context.SaveChangesAsync();
+        GitHubService.RefreshConfig();
+        await JSRuntime.InvokeVoidAsync("showToast", "API token saved", "", "bottom", "success");
+        ApiToken = string.Empty;
+    }
+    
+    private async Task SaveGitHubInformation()
+    {
+        (await Context.Configuration.FindAsync("github-reponame")).Contents = RepoName;
+        (await Context.Configuration.FindAsync("github-destination")).Contents = Destination;
+        await Context.SaveChangesAsync();
+        GitHubService.RefreshConfig();
+        await JSRuntime.InvokeVoidAsync("showToast", "Changes saved", "", "bottom", "success");
+    }
+
+    public async Task ResetState()
+    {
+        ApiToken = string.Empty;
+        RepoName = (await Context.Configuration.FindAsync("github-reponame")).Contents;
+        Destination = (await Context.Configuration.FindAsync("github-destination")).Contents;
+        StateHasChanged();
+    }
+
+}

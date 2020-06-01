@@ -1,0 +1,13 @@
+@page "/UploadFile"
+@model BlazorEditor.Pages.UploadFile
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    Layout = "_Layout";
+}
+
+<form enctype="multipart/form-data" method="post">
+    <input type="file" asp-for="FileUpload"/>
+    <input asp-for="FileDirectory"/>
+    <button type="submit">Submit</button>
+</form>
