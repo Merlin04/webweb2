@@ -68,6 +68,7 @@
             await JSRuntime.InvokeVoidAsync("setPreviewIframeContent", (await Context.CompiledPages.FindAsync(_previewPage)).Contents);
         }
         await JSRuntime.InvokeVoidAsync("showPreviewDialog");
+        StateHasChanged();
     }
     
     public async Task ResetModalState()
