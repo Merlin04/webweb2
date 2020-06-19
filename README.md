@@ -1,4 +1,6 @@
 # webweb2
+![.NET Core](https://github.com/Merlin04/webweb2/workflows/.NET%20Core/badge.svg)
+
 A CMS with a web-based IDE, support for C# Razor syntax, compilation to plain HTML, and the ability to deploy to GitHub Pages or a location on your server.
 
 ![Screenshot of editor](img/editor.png)
