@@ -214,6 +214,7 @@
         JSRuntime.InvokeVoidAsync("hideRenamePopup");
         MoveItem(oldPath, newPath);
         RefreshFiles();
+        _selectedItem = string.Empty;
     }
 
     private async Task DeleteItem()

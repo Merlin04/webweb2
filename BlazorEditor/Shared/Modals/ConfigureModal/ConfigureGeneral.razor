@@ -54,7 +54,7 @@
 
     private void EmptyGarbage()
     {
-        Directory.GetFiles(MiscUtils.MapPath("wwwroot/webwebResources/garbage")).ToList().ForEach(File.Delete);
+        MiscUtils.EmptyDirectory(MiscUtils.MapPath("wwwroot/webwebResources/garbage"));
     }
     
     public async Task ResetState()

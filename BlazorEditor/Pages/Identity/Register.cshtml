@@ -23,7 +23,7 @@
                 <div class="ui large header">
                     Register an account
                 </div>
-                <form asp-route-returnUrl="@Model.ReturnUrl" method="post" class="ui form">
+                <form asp-route-returnUrl="@Model.ReturnUrl" asp-route-code="@token" method="post" class="ui form">
                     <div class="field">
                         <label>Username</label>
                         <input asp-for="Input.Username" type="text" placeholder="Username">

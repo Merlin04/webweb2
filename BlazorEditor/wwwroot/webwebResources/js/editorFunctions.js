@@ -481,9 +481,10 @@ function setOpenModalPreviewContents(contents) {
 }
 
 function uploadFile(fileDirectory) {
+    let file = $('#fileUpload')[0].files[0];
+    if (file === undefined) return;
     $('#uploadFileButton').addClass("loading");
     let fd = new FormData();
-    let file = $('#fileUpload')[0].files[0];
     fd.append('FileUpload', file);
     fd.append('FileDirectory', fileDirectory);
     fd.append('__RequestVerificationToken', $("input[name='__RequestVerificationToken']").val());

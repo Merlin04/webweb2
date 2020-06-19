@@ -8,7 +8,7 @@
         <Editor @ref="_editor"/>
         
         @code {
-        
+
             private Editor _editor;
             private static Action _resetOpenModalState;
             private static Action _resetNewModalState;
@@ -18,10 +18,11 @@
             private static Action _resetConfigureModalState;
             private static Action _resetManageFilesModalState;
             private static Action _resetDeployGitHubModalState;
+            private static Action _resetDeployFSModalState;
             private static Action _manageFilesRefresh;
             private static Action _manageFilesClearRenameValue;
             private static Action _saveToDb;
-            
+
             protected override void OnInitialized()
             {
                 _resetOpenModalState = ResetOpenModalStatePrivate;
@@ -32,50 +33,51 @@
                 _resetConfigureModalState = ResetConfigureModalStatePrivate;
                 _resetManageFilesModalState = ResetManageFilesModalStatePrivate;
                 _resetDeployGitHubModalState = ResetDeployGitHubModalStatePrivate;
+                _resetDeployFSModalState = ResetDeployFSModalStatePrivate;
                 _manageFilesRefresh = ManageFilesRefreshPrivate;
                 _manageFilesClearRenameValue = ManageFilesClearRenameValuePrivate;
                 _saveToDb = SaveToDbPrivate;
             }
-            
+
             [JSInvokable]
             public static void ResetOpenModalState()
             {
                 _resetOpenModalState.Invoke();
             }
-        
+
             private void ResetOpenModalStatePrivate()
             {
                 InvokeAsync(_editor.OModal.ResetModalState);
             }
-        
+
             [JSInvokable]
             public static void ResetNewModalState()
             {
                 _resetNewModalState.Invoke();
             }
-        
+
             private void ResetNewModalStatePrivate()
             {
                 InvokeAsync(_editor.NModal.ResetModalState);
             }
-        
+
             [JSInvokable]
             public static void ResetManageItemsModalState()
             {
                 _resetManageItemsModalState.Invoke();
             }
-        
+
             private void ResetManageItemsModalStatePrivate()
             {
                 InvokeAsync(_editor.MIModal.ResetModalState);
             }
-        
+
             [JSInvokable]
             public static void ResetPreviewModalState()
             {
                 _resetPreviewModalState.Invoke();
             }
-        
+
             private void ResetPreviewModalStatePrivate()
             {
                 InvokeAsync(_editor.PModal.ResetModalState);
@@ -123,6 +125,17 @@
             private void ResetDeployGitHubModalStatePrivate()
             {
                 InvokeAsync(_editor.DGModal.ResetModalState);
+            }
+
+            [JSInvokable]
+            public static void ResetDeployFSModalState()
+            {
+                _resetDeployFSModalState.Invoke();
+            }
+
+            private void ResetDeployFSModalStatePrivate()
+            {
+                InvokeAsync(_editor.DFModal.ResetModalState);
             }
             
             [JSInvokable]

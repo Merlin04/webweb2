@@ -1,6 +1,7 @@
 @using Microsoft.EntityFrameworkCore
 @using shortid
 @using BlazorEditor.Data
+@using CloneExtensions
 @inject ApplicationDbContext Context
 @inject IJSRuntime JSRuntime
 @implements IDisposable
@@ -80,17 +81,10 @@
     {
         await TransitionItem();
         ShowRename = false;
-        
-        //dynamic newItem = Item;
-        //newItem.Title = RenameValue;
-        Component newItem = new Component
-        {
-            Title = RenameValue,
-            HtmlContents = Item.HtmlContents,
-            CssContents = Item.CssContents,
-            JsContents = Item.JsContents
-        };
-        
+
+        dynamic newItem = CloneFactory.GetClone(Item);
+        newItem.Title = RenameValue;
+
         await DeleteItem();
         await DbCommon.AddItem(Context, newItem);
         ManageItemsModal.DoStateHasChanged();

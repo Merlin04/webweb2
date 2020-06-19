@@ -83,9 +83,7 @@
             StateHasChanged();
             StatusUpdate("Deleting old pages and files...", StatusType.Status);
             string deployPath = (await Context.Configuration.FindAsync("localfs-path")).Contents;
-            DirectoryInfo di = new DirectoryInfo(deployPath);
-            di.EnumerateFiles().ForEachInEnumerable(file => file.Delete());
-            di.EnumerateDirectories().ForEachInEnumerable(dir => dir.Delete(true));
+            MiscUtils.EmptyDirectory(deployPath);
             StatusUpdate("Saving pages...", StatusType.Status);
             await Context.CompiledPages.ToList().ForEachAsync(async page =>
             {

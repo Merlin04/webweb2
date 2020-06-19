@@ -34,5 +34,12 @@ namespace BlazorEditor.Utils
             byte[] plainTextBytes = Encoding.UTF8.GetBytes(plainText);
             return Convert.ToBase64String(plainTextBytes);
         }
+
+        public static void EmptyDirectory(string path)
+        {
+            DirectoryInfo di = new DirectoryInfo(path);
+            di.EnumerateFiles().ForEachInEnumerable(file => file.Delete());
+            di.EnumerateDirectories().ForEachInEnumerable(dir => dir.Delete(true));
+        }
     }
 }

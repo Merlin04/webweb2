@@ -44,7 +44,7 @@ namespace BlazorEditor
                     context.Configuration.Find("assemblies").Contents = "System.Collections";
                     context.Pages.Add(new Page
                     {
-                        Title = "Index",
+                        Title = "index",
                         HtmlContents = InitialItemValues.PageValues[0],
                         CssContents = InitialItemValues.PageValues[1],
                         JsContents = InitialItemValues.PageValues[2]
