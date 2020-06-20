@@ -11,9 +11,11 @@ RUN dotnet restore
 COPY BlazorEditor/. ./BlazorEditor/
 WORKDIR /source/BlazorEditor
 RUN dotnet publish -c release -o /app --no-restore
+COPY DockerRunWebweb.sh /app/DockerRunWebweb.sh
 
 # final stage/image
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1
 WORKDIR /app
 COPY --from=build /app ./
-ENTRYPOINT ["dotnet", "BlazorEditor.dll"]
+COPY --from=build /source/BlazorEditor/wwwroot/webwebResources ./newWebwebResources
+ENTRYPOINT ["bash", "DockerRunWebweb.sh"]
