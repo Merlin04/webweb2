@@ -15,7 +15,11 @@ class editorTab {
         this.title = title;
         this.models = [];
         subtabs.forEach((st, n) => {
-            this.models.push(new editorModel(contents[n], st.toLowerCase()));
+            let lang = st.toLowerCase();
+            if(lang === "js") {
+                lang = "javascript";
+            }
+            this.models.push(new editorModel(contents[n], lang));
         });
         this.isLayout = isLayout
         this.subtab = 0;
