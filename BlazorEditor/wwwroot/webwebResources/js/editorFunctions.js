@@ -414,6 +414,16 @@ function showDeployFSDialog() {
 
 function resetNewItemDropdown() {
     $('#newItemTypeDropdown').dropdown('restore defaults');
+    $('#newItemTemplateDropdown').dropdown('restore defaults');
+}
+
+function setConfigureGitDropdown(selection) {
+    let gitDropdown = $('#configureGitDestinationDropdown');
+    if(selection === "") {
+        gitDropdown.dropdown('restore defaults');
+        return;
+    }
+    gitDropdown.dropdown('set selected', selection);
 }
 
 function resetPreviewModalDropdown() {

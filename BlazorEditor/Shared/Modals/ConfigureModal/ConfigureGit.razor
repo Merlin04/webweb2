@@ -23,7 +23,7 @@
         </div>
         <div class="field">
             <label>Destination</label>
-            <div class="ui selection dropdown">
+            <div class="ui selection dropdown" id="configureGitDestinationDropdown">
                 <input type="hidden" @bind="Destination"/>
                 <i class="dropdown icon"></i>
                 <div class="default text">Destination</div>
@@ -55,7 +55,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await ResetState();
+        await ResetState(false);
     }
 
     private async Task SaveGitHubToken()
@@ -76,11 +76,16 @@
         await JSRuntime.InvokeVoidAsync("showToast", "Changes saved", "", "bottom", "success");
     }
 
-    public async Task ResetState()
+    public async Task ResetState(bool setDropdownJS = true)
     {
         ApiToken = string.Empty;
         RepoName = (await Context.Configuration.FindAsync("github-reponame")).Contents;
         Destination = (await Context.Configuration.FindAsync("github-destination")).Contents;
+        if (setDropdownJS)
+        {
+            await JSRuntime.InvokeVoidAsync("setConfigureGitDropdown", Destination);
+        }
+
         StateHasChanged();
     }
 
