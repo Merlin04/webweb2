@@ -13,7 +13,7 @@
         <div class="ui header">@CurrentPath</div>
         <form class="ui form" style="display: inline-block;">
             <label for="fileUpload" class="ui labeled icon button" id="uploadFileButton"><i class="upload icon"></i>Upload</label>
-            <input type="file" name="FileUpload" id="fileUpload" onchange="uploadFile('@CurrentPath')" style="display: none;"/>
+            <input type="file" name="FileUpload" id="fileUpload" multiple onchange="uploadFile('@CurrentPath')" style="display: none;"/>
         </form>
         <div class="ui icon button" @onclick="e => { ShowCreateDirectory = !ShowCreateDirectory; }"><i class="folder plus icon"></i></div>
         <div class="ui @(SelectedItem == string.Empty ? "disabled " : "")red icon button" @onclick="DeleteItem"><i class="trash icon"></i></div>

@@ -494,33 +494,36 @@ function setOpenModalPreviewContents(contents) {
     }
 }
 
-function uploadFile(fileDirectory) {
-    let file = $('#fileUpload')[0].files[0];
+async function uploadFile(fileDirectory) {
+    let files = $('#fileUpload')[0].files;
+    let uploadButton = $('#uploadFileButton');
+    uploadButton.addClass("loading");
+    let result = true;
+    
+    for (const file of files) {
+        result = result && await uploadOneFile(file, fileDirectory);
+    }
+    
+    uploadButton.removeClass('loading');
+    if(!result) {
+        uploadButton.text("Error");
+    }
+    DotNet.invokeMethodAsync("BlazorEditor", "ManageFilesRefresh");
+}
+
+async function uploadOneFile(file, directory) {
     if (file === undefined) return;
-    $('#uploadFileButton').addClass("loading");
     let fd = new FormData();
     fd.append('FileUpload', file);
-    fd.append('FileDirectory', fileDirectory);
+    fd.append('FileDirectory', directory);
     fd.append('__RequestVerificationToken', $("input[name='__RequestVerificationToken']").val());
-    $.ajax({
-        url: '/UploadFile',
-        type: 'post',
-        data: fd,
-        contentType: false,
-        processData: false,
-        success: response => {
-            let uploadButton = $('#uploadFileButton');
-            uploadButton.removeClass('loading');
-            if(response === 0) {
-                // Error
-                uploadButton.text("Error");
-            }
-            else {
-                // Success
-                DotNet.invokeMethodAsync("BlazorEditor", "ManageFilesRefresh");
-            }
-        }
-    });
+    
+    let response = await fetch("/UploadFile", {
+        method: 'POST',
+        body: fd
+    })
+    
+    return response.ok;
 }
 
 function hideRenamePopup() {
