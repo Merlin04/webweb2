@@ -76,7 +76,7 @@
       <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.5" />
       <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
       <PackageReference Include="Octokit" Version="0.48.0" />
-      <PackageReference Include="RazorEngineCore" Version="2020.5.2" />
+      <PackageReference Include="RazorEngineCore" Version="2020.6.1" />
       <PackageReference Include="shortid" Version="2.0.1" />
     </ItemGroup>
 
