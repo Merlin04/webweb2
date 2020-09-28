@@ -72,7 +72,7 @@
       <PackageReference Include="CloneExtensions" Version="1.4.2" />
       <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="3.1.8" />
       <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="3.1.8" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.7" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.8" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.8" />
       <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
       <PackageReference Include="Octokit" Version="0.48.0" />
